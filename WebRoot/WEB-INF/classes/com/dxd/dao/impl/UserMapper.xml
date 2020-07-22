@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.dxd.dao.UserMapper">
+ 	<!-- 用户注册 -->
+ 	<insert id="Regist" parameterType="User">
+ 		INSERT INTO `user`(`uName`,`uLoginName`,`uPassword`,`createDate`)
+ 		VALUE(#{uName},#{uLoginName},#{uPassword},#{createDate})
+ 		<selectKey keyProperty="uId" order="AFTER" resultType="int">
+ 			select last_insert_id()
+ 		</selectKey>
+ 	</insert>
+ 	<!-- 绑定员工身份 -->
+ 	<insert id="insertRole" parameterType="map">
+ 		INSERT INTO user_role(uId,rId)VALUE(#{uId},#{rId})
+ 	</insert>
+ 	<!-- 验证登录 -->
+ 	<select id="checkLogin" parameterType="String" resultMap="userMap">
+ 		SELECT u.*,r.rId,r.rName FROM `user` AS u
+		LEFT JOIN user_role AS ur ON u.uId = ur.uId
+		LEFT JOIN role AS r ON r.rId = ur.rId
+		WHERE uLoginName = #{uLoginName}
+ 	</select>
+ 	<!-- 判断用户名是否存在 -->
+ 	<select id="checkLoginName" parameterType="String" resultType="int">
+ 		select count(*) from `user` where uLoginName = #{uLoginName}
+ 	</select>
+ 	<!-- 获得所有用户 -->
+ 	<select id="getAllUser" resultMap="userMap">
+ 		SELECT u.*,r.rId,r.rName FROM `user` AS u
+		LEFT JOIN user_role AS ur ON u.uId = ur.uId
+		LEFT JOIN role AS r ON r.rId = ur.rId
+ 	</select>
+ 	<resultMap type="User" id="userMap">
+ 		<id column="uId" property="uId"/>
+ 		<result column="uName" property="uName"/>
+ 		<result column="uLoginName" property="uLoginName"/>
+ 		<result column="uPassword" property="uPassword"/>
+		<association property="role" javaType="Role">
+			<id column="rId" property="rId"/>
+			<result column="rName" property="rName"/>
+		</association> 		
+ 	</resultMap>
+ </mapper>

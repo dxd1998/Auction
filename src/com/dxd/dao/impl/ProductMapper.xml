@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.dxd.dao.ProductMapper">
+ 	<!-- 查询所有拍卖品 -->
+ 	<select id="getAllProduct" resultMap="productMap">
+ 		SELECT p.*,t.*,u.uId,u.uName FROM product AS p
+		LEFT JOIN product_type AS pt ON p.pId = pt.pId
+		LEFT JOIN `type` AS t ON t.tId = pt.tId	
+		LEFT JOIN `user_product` AS up ON up.pId = p.pId
+		LEFT JOIN `user` AS u ON u.uId = up.uId
+		ORDER BY p.startDate DESC
+ 	</select>
+ 	<!-- 上传拍卖品 -->
+ 	<insert id="insertProduct" parameterType="Product">
+ 		INSERT INTO `product`(`pName`,`pImg`,`pPrice`,`firstPrice`,`joinDate`,`startDate`,`endDate`)
+		VALUE(#{pName},#{pImg},#{pPrice},#{firstPrice},#{joinDate},#{startDate},#{endDate})
+		<selectKey keyProperty="pId" order="AFTER" resultType="int">
+ 			select last_insert_id()
+ 		</selectKey>
+ 	</insert>
+ 	<!-- 绑定拍卖品状态 -->
+ 	<insert id="insertProductType" parameterType="map">
+ 		INSERT INTO `product_type`(pId,tId)VALUE(#{pId},#{tId})
+ 	</insert>
+ 	<!-- 用户上传拍卖品 -->
+ 	<insert id="insertProductUser" parameterType="map">
+ 		INSERT INTO `user_product`(uId,pId)VALUE(#{uId},#{pId})
+ 	</insert>
+ 	<!-- 得到所有待审核的拍卖品 -->
+ 	<select id="getProductTypeBy1" resultMap="productMap">
+ 		SELECT p.*,t.*,u.uId,u.uName FROM product AS p
+		LEFT JOIN product_type AS pt ON p.pId = pt.pId
+		LEFT JOIN `type` AS t ON t.tId = pt.tId	
+		LEFT JOIN `user_product` AS up ON up.pId = p.pId
+		LEFT JOIN `user` AS u ON u.uId = up.uId
+		WHERE t.tId = 1
+		ORDER BY p.startDate DESC
+ 	</select>
+ 	<!-- 改变拍卖品状态 -->
+ 	<update id="updateProductType" parameterType="map">
+ 		UPDATE `product_type` SET tId = #{tId} WHERE pId =#{pId}
+ 	</update>
+ 	<!-- 得到该用户所有拍品 -->
+ 	<select id="getProductByUser" parameterType="map" resultMap="productMap">
+ 		SELECT p.*,t.*,u.uId,u.uName FROM product AS p
+		LEFT JOIN product_type AS pt ON p.pId = pt.pId
+		LEFT JOIN `type` AS t ON t.tId = pt.tId	
+		LEFT JOIN `user_product` AS up ON up.pId = p.pId
+		LEFT JOIN `user` AS u ON u.uId = up.uId
+		WHERE u.uId = #{uId}
+		ORDER BY p.startDate DESC
+ 	</select>
+ 	<!-- 获得拍品状态id -->
+ 	<select id="getProductType" parameterType="int" resultType="int">
+ 			SELECT tId FROM `product_type` WHERE pId = #{pId}
+ 	</select>
+ 	<!-- 删除拍品 -->
+ 	<delete id="deleteProduct" parameterType="int">
+ 		DELETE FROM `product` WHERE pId = #{pId}
+ 	</delete>
+ 	<!-- 记录竞拍记录 -->
+ 	<insert id="insertRecord" parameterType="Record">
+ 		INSERT INTO `record`(`uName`,`onePrice`,`giveDate`,`pName`)
+		VALUE(#{uName},#{onePrice},#{giveDate},#{pName})
+ 	</insert>
+ 	<!-- 添加一条拍卖成功订单 -->
+ 	<insert id="insertOrder" parameterType="map">
+ 		INSERT INTO `order`(`uId`,`pId`,`createDate`)
+ 		VALUE(#{uId},#{pId},#{createDate})
+ 	</insert>
+ 	<!-- 查询登录用户所有订单 -->
+ 	<select id="getAllOrder" parameterType="int" resultMap="orderMap">
+ 		SELECT o.oId,o.createDate,u.uId,u.uName,p.pId,p.pName,p.pImg,p.pPrice FROM `order` AS o
+		LEFT JOIN `user` AS u ON o.uId = u.uId
+		LEFT JOIN product AS p ON p.pId = o.pId
+		where u.uId = #{uId}
+		ORDER BY o.createDate DESC
+ 	</select>
+ 	<!-- 获得所有竞拍记录 -->
+ 	<select id="getAllRecord" parameterType="map" resultMap="recordMap">
+ 		<bind name="pagerValue" value="(currentPage-1)*rowPerPage"/>
+ 		SELECT * FROM `record` limit #{pagerValue},#{rowPerPage}
+ 	</select>
+ 	<!-- 总记录数 -->
+ 	<select id="getAllRecordCount" resultType="int">
+ 		select count(*) from record
+ 	</select>
+ 	<!-- 修改拍品当前价格 -->
+ 	<update id="updatePrice" parameterType="map">
+ 		UPDATE `product` SET firstPrice=#{price} WHERE pId = #{pId}
+ 	</update>
+ 	<resultMap type="Record" id="recordMap">
+ 		<id column="rId" property="rId"/>
+ 		<result column="uName" property="uName"/>
+ 		<result column="onePrice" property="onePrice"/>
+ 		<result column="giveDate" property="giveDate"/>
+ 		<result column="pName" property="pName"/>
+ 	</resultMap>
+ 	<resultMap type="Order" id="orderMap">
+ 		<id column="oId" property="oId"/>
+ 		<result column="createDate" property="createDate"/>
+ 		<association property="user" javaType="User">
+ 			<id column="uId" property="uId"/>
+ 			<result column="uName" property="uName"/>
+ 		</association>
+ 		<association property="product" javaType="Product">
+ 			<id column="pId" property="pId"/>
+ 			<result column="pName" property="pName"/>
+ 			<result column="pImg" property="pImg"/>
+ 			<result column="pPrice" property="pPrice"/>
+ 		</association>
+ 	</resultMap>
+ 	<resultMap type="Product" id="productMap">
+ 		<id column="pId" property="pId"/>
+ 		<result column="pName" property="pName"/>
+ 		<result column="pImg" property="pImg"/>
+ 		<result column="pPrice" property="pPrice"/>
+ 		<result column="firstPrice" property="firstPrice"/>
+ 		<result column="joinDate" property="joinDate"/>
+ 		<result column="startDate" property="startDate"/>
+ 		<result column="endDate" property="endDate"/>
+ 		<association property="type" javaType="Type" >
+ 			<id column="tId" property="tId"/>
+ 			<result column="tName" property="tName"/>
+ 		</association>
+ 		<association property="user" javaType="User">
+ 			<id column="uId" property="uId"/>
+ 			<result column="uName" property="uName"/>
+ 		</association>
+ 	</resultMap>
+ </mapper>
